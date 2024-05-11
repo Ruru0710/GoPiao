@@ -1,0 +1,88 @@
+﻿<!DOCTYPE html>
+<html>
+<head>
+    <link href="https://fonts.googleapis.com/css?family=Roboto:100,300,400,500,700,900" rel="stylesheet">
+    @*<link href="https://cdn.jsdelivr.net/npm/@mdi/font@6.x/css/materialdesignicons.min.css" rel="stylesheet">*@
+    <link href="https://cdn.jsdelivr.net/npm/vuetify@2.x/dist/vuetify.min.css" rel="stylesheet">
+    <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no, minimal-ui">
+</head>
+<body>
+    <div id="app">
+        <v-app>
+            <v-main>
+                <v-container>
+                    <v-layout row wrap>
+                        <v-flex xs12 sm6>
+                            <v-text-field v-model="stockSymbol" label="輸入股票代號(輸入2個(含)以上者，用,隔開)"></v-text-field>
+                        </v-flex>
+                        <v-flex xs12 sm6>
+                            <v-btn color="primary" v-on:click="searchStock">查詢</v-btn>
+                        </v-flex>
+                    </v-layout>
+                </v-container>
+                <div>
+                    <v-data-table v-if="dataArray.length > 0" :headers="headers" :items="dataArray" class="elevation-1">
+                        <template v-slot:item="{ item }">
+                            <tr>
+                                <td>{{ item[0] }}</td>
+                                <td>{{ item[1] }}</td>
+                                <td>{{ item[2] }}</td>
+                                <td>{{ item[3] }}</td>
+                                <td>{{ item[4] }}</td>
+                                <td>{{ item[5] }}</td>
+                                <td>{{ item[6] }}</td>
+                                <td>{{ item[7] }}</td>
+                            </tr>
+                        </template>
+                        <template v-slot:header.name="{ header }">
+                            {{ header.text.toUpperCase() }}
+                        </template>
+                    </v-data-table>
+                    <div v-else>
+                        No stock data available.
+                    </div>
+                </div>
+            </v-main>
+        </v-app>
+    </div>
+
+    <script src="https://cdn.jsdelivr.net/npm/vue@2.x/dist/vue.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/vuetify@2.x/dist/vuetify.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/axios/dist/axios.min.js"></script>
+    <script>
+        new Vue({
+            el: '#app',
+            vuetify: new Vuetify(),
+            data() {
+                return {
+                    stockSymbol: '', // 用來存放輸入的股票代號
+                    dataArray: [],  //用來存放後端傳回來的API資料
+                    headers: [
+                        { text: '股票代號', value: 'code' },
+                        { text: '公司名稱', value: 'company' },
+                        { text: '開盤價', value: 'open' },
+                        { text: '最高價', value: 'high' },
+                        { text: '最低價', value: 'low' },
+                        { text: '成交價', value: 'final' },
+                        { text: '賣價', value: 'sell' },
+                        { text: '買價', value: 'bid' }
+                    ],
+                }
+            },
+            methods: {
+                async searchStock() {
+                    const symbols1 = this.stockSymbol;
+                    const url = `/GoPiao/GetRealtimePrice?symbols1=${symbols1}`;
+                    axios.get(url)
+                        .then(response => {
+                            this.dataArray = response.data;
+                        })
+                        .catch(error => {
+                            console.error('Error fetching stock data:', error);
+                        });
+                }
+            }
+        })
+    </script>
+</body>
+</html>
