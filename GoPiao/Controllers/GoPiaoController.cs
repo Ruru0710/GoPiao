@@ -25,6 +25,7 @@ namespace GoPiao.Controllers
             return View();
         }
 
+		//查詢個股資訊(代碼、公司名稱、開盤、最高價、最低價、收盤價、最低委買價、最高委買價)
 		public ActionResult GetRealtimePrice(string symbols1)
 		{
 			//GetRealtimePriceOut outModel = new GetRealtimePriceOut();
@@ -107,6 +108,32 @@ namespace GoPiao.Controllers
 			ContentResult result = new ContentResult();
 			result.ContentType = "application/json";
 			result.Content = JsonConvert.SerializeObject(dataArray);
+			return result;
+		}
+
+		//查詢每月股價
+		public ActionResult GetRealtimePrice1(string symbols2)
+		{
+			// 呼叫網址
+			string url = "https://www.twse.com.tw/exchangeReport/STOCK_DAY?date=20210510&stockNo=" + symbols2;
+
+			string downloadedData = "";
+			using (WebClient wClient = new WebClient())
+			{
+				// 取得網頁資料
+				wClient.Encoding = Encoding.UTF8;
+				downloadedData = wClient.DownloadString(url);
+				downloadedData = downloadedData.Trim();
+			}
+
+			// 解析 JSON 数据
+			JObject jsonObject = JObject.Parse(downloadedData);
+
+
+			//// 輸出json
+			ContentResult result = new ContentResult();
+			//result.ContentType = "application/json";
+			//result.Content = JsonConvert.SerializeObject(dataArray);
 			return result;
 		}
 	}
