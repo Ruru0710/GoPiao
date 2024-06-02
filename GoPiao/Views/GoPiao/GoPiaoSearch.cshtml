@@ -1,195 +1,212 @@
-﻿<!DOCTYPE html>
-<html>
-<head>
-    <link href="https://fonts.googleapis.com/css?family=Roboto:100,300,400,500,700,900" rel="stylesheet">
-    @*<link href="https://cdn.jsdelivr.net/npm/@mdi/font@6.x/css/materialdesignicons.min.css" rel="stylesheet">*@
-    <link href="https://cdn.jsdelivr.net/npm/vuetify@2.x/dist/vuetify.min.css" rel="stylesheet">
-    <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no, minimal-ui">
-</head>
-<body>
-    <div id="app">
-        <v-app>
-            <v-main>
-                <v-container>
-                    <v-layout row wrap>
-                        <v-flex xs12 sm6>
-                            <v-text-field v-model="stockSymbol" label="輸入股票代號(輸入多個請用,隔開)"></v-text-field>
-                        </v-flex>
-                        <v-flex xs12 sm6>
-                            <v-btn color="primary" v-on:click="searchStock">查詢</v-btn>
-                        </v-flex>
-                    </v-layout>
-                </v-container>
-                <div>
-                    <v-data-table v-if="dataArray.length > 0" :headers="headers" :items="dataArray" class="elevation-1">
-                        <template v-slot:item="{ item }">
-                            <tr>
-                                <td v-for="(data, index) in item" :key="index">{{ data }}</td>
-                                <td><v-btn color="blue" dark v-on:click="openLOG(item[0],date,date1)">LOG</v-btn></td>
-                            </tr>
-                        </template>
-                        <template v-slot:header.name="{ header }">
-                            {{ header.text.toUpperCase() }}
-                        </template>
-                    </v-data-table>
-                    <div v-else>
-                        查無此股票
-                    </div>
+﻿<link href="https://fonts.googleapis.com/css?family=Roboto:100,300,400,500,700,900" rel="stylesheet">
+@*<link href="https://cdn.jsdelivr.net/npm/@mdi/font@6.x/css/materialdesignicons.min.css" rel="stylesheet">*@
+<link href="https://cdn.jsdelivr.net/npm/vuetify@2.x/dist/vuetify.min.css" rel="stylesheet">
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no, minimal-ui">
+
+
+<div id="app">
+    <v-app>
+        <v-main>
+            <v-container>
+                <!-- 输入股票代号和查询按钮 -->
+                <v-row>
+                    <v-col xs12 sm6>
+                        <v-text-field v-model="stockSymbol"
+                                      label="輸入股票代號(輸入2個(含)以上者，用,隔開)"></v-text-field>
+                    </v-col>
+                    <v-col xs12 sm6>
+                        <v-btn color="primary" v-on:click="searchStock">查詢</v-btn>
+                    </v-col>
+                </v-row>
+
+                <!-- 数据表 -->
+                <v-data-table v-if="dataArray.length > 0"
+                              :headers="headers"
+                              :items="dataArray"
+                              class="elevation-1">
+                    <template v-slot:item="{ item }">
+                        <tr>
+                            <td v-for="(data, index) in item" :key="index">{{ data }}</td>
+                            <td>
+                                <v-btn color="blue" dark v-on:click="openDialog(item[0])">LOG</v-btn>
+                            </td>
+                        </tr>
+                    </template>
+                </v-data-table>
+                <div v-else>
+                    No stock data available.
                 </div>
 
-                <v-dialog v-model="dialogLOG" max-width="1200">
+                <!-- 对话框 -->
+                <v-dialog v-model="dialog" max-width="1500">
                     <v-card>
                         <v-card-title class="headline">{{ selectedStock }}</v-card-title>
                         <v-card-text>
+                            <!-- 日期选择器 -->
                             <v-row>
-                                <v-col cols="12"
-                                       sm="6"
-                                       md="4">
-                                    <v-menu v-model="menu2"
+                                <v-col xs12 sm6>
+                                    <v-menu ref="startMenu"
+                                            v-model="startMenu"
                                             :close-on-content-click="false"
                                             :nudge-right="40"
                                             transition="scale-transition"
                                             offset-y
-                                            min-width="auto">
+                                            min-width="290px">
                                         <template v-slot:activator="{ on, attrs }">
-                                            <v-text-field v-model="date"
-                                                          label="開始日"
+                                            <v-text-field v-model="startDate"
+                                                          label="查詢起日"
                                                           prepend-icon="mdi-calendar"
                                                           readonly
                                                           v-bind="attrs"
                                                           v-on="on"></v-text-field>
                                         </template>
-                                        <v-date-picker v-model="date"
-                                                       v-on:input="menu2 = false"></v-date-picker>
+                                        <v-date-picker v-model="startDate" v-on:input="startMenu = false"></v-date-picker>
                                     </v-menu>
                                 </v-col>
-
-                                <v-col cols="12"
-                                       sm="6"
-                                       md="4">
-                                    <v-menu v-model="menu1"
+                                <v-col xs12 sm6>
+                                    <v-menu ref="endMenu"
+                                            v-model="endMenu"
                                             :close-on-content-click="false"
                                             :nudge-right="40"
                                             transition="scale-transition"
                                             offset-y
-                                            min-width="auto">
+                                            min-width="290px">
                                         <template v-slot:activator="{ on, attrs }">
-                                            <v-text-field v-model="date1"
-                                                          label="結束日"
+                                            <v-text-field v-model="endDate"
+                                                          label="查詢迄日"
                                                           prepend-icon="mdi-calendar"
                                                           readonly
                                                           v-bind="attrs"
                                                           v-on="on"></v-text-field>
                                         </template>
-                                        <v-date-picker v-model="date1"
-                                                       v-on:input="menu1 = false"></v-date-picker>
+                                        <v-date-picker v-model="endDate" v-on:input="endMenu = false"></v-date-picker>
                                     </v-menu>
                                 </v-col>
-                                <v-btn color="primary" v-on:click="searchStock1(selectedStock, date, date1)">查詢</v-btn>
-                            </v-row>
-
-                            <v-row>
-                                <v-data-table :headers="headers1" :items="dataArray1" class="elevation-1">
-                                    <template v-slot:item="{ item }">
-                                        <tr>
-                                            <td v-for="(data, index) in item" :key="index">{{ data }}</td>
-                                        </tr>
-                                    </template>
-                                    <template v-slot:header.name="{ header }">
-                                        {{ header.text.toUpperCase() }}
-                                    </template>
-                                </v-data-table>
                             </v-row>
                         </v-card-text>
+
+                        <!-- 错误信息 -->
+                        <v-alert v-if="errorMessage" type="error" dismissible>{{ errorMessage }}</v-alert>
+
+                        <!-- LOG 数据表 -->
+                        <v-data-table v-if="dataTableVisible"
+                                      :headers="headers_log"
+                                      :items="dataArray1"
+                                      class="elevation-1"
+                                      fixed-header
+                                      height="400px">
+                            <template v-slot:item="{ item }">
+                                <tr>
+                                    <td>{{ item[0] }}</td>  <!-- 日期 -->
+                                    <td>{{ item[3] }}</td>  <!-- 开盘价 -->
+                                    <td>{{ item[4] }}</td>  <!-- 最高价 -->
+                                    <td>{{ item[5] }}</td>  <!-- 最低价 -->
+                                    <td>{{ item[6] }}</td>  <!-- 收盘价 -->
+                                    <td>{{ item[7] }}</td>  <!-- 涨跌价差 -->
+                                    <td>{{ item[8] }}</td>  <!-- 成交笔数 -->
+                                </tr>
+                            </template>
+                        </v-data-table>
+
+                        <!-- 对话框按钮 -->
                         <v-card-actions>
-                            <v-btn color="blue darken-1" text v-on:click="closeLOG">關閉</v-btn>
+                            <v-btn color="blue darken-1" text v-on:click="closeDialog">關閉</v-btn>
+                            <v-btn color="blue darken-1" text v-on:click="validateDates">查詢</v-btn>
                         </v-card-actions>
                     </v-card>
                 </v-dialog>
-            </v-main>
-        </v-app>
-    </div>
+            </v-container>
+        </v-main>
+    </v-app>
+</div>
 
-    <script src="https://cdn.jsdelivr.net/npm/vue@2.x/dist/vue.js"></script>
-    <script src="https://cdn.jsdelivr.net/npm/vuetify@2.x/dist/vuetify.js"></script>
-    <script src="https://cdn.jsdelivr.net/npm/axios/dist/axios.min.js"></script>
-    <script>
-        new Vue({
-            el: '#app',
-            vuetify: new Vuetify(),
-            data() {
-                return {
-                    stockSymbol: '', // 用來存放輸入的股票代號
-                    dataArray: [],  //用來存放後端傳回來的API資料(一開始的)
-                    dataArray1: [],  //用來存放後端傳回來的API資料(LOG的)
-                    dialogLOG: false,  //按下LOG按鈕，控制視窗
-                    selectedStock: '',  //按下LOG按鈕，將股票代號存下
-                    date: (new Date(Date.now() - (new Date()).getTimezoneOffset() * 60000)).toISOString().substr(0, 10),
-                    date1: (new Date(Date.now() - (new Date()).getTimezoneOffset() * 60000)).toISOString().substr(0, 10),
-                    menu2: false,
-                    menu1: false,
-                    headers: [
-                        { text: '股票代號', value: 'code' },
-                        { text: '公司名稱', value: 'company' },
-                        { text: '開盤價', value: 'open' },
-                        { text: '最高價', value: 'high' },
-                        { text: '最低價', value: 'low' },
-                        { text: '成交價', value: 'final' },
-                        { text: '賣價', value: 'sell' },
-                        { text: '買價', value: 'bid' },
-                        { text: '紀錄' }
-                    ],
+<script src="https://cdn.jsdelivr.net/npm/vue@2.x/dist/vue.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/vuetify@2.x/dist/vuetify.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/axios/dist/axios.min.js"></script>
 
-                    headers1: [
-                        { text: '日期', value: 'date' },
-                        { text: '開盤價', value: 'open1' },
-                        { text: '最高價', value: 'high1' },
-                        { text: '最低價', value: 'low1' },
-                        { text: '成交價', value: 'final1' },
-                        { text: '賣價', value: 'sell1' },
-                        { text: '買價', value: 'bid1' }
-                    ],
+<script>
+    new Vue({
+        el: '#app',
+        vuetify: new Vuetify(),
+        data() {
+            return {
+                stockSymbol: '', // 存放输入的股票代号
+                dataArray: [],  // 存放后端返回的API数据
+                dataArray1: [],  // 存放后端返回的LOG数据
+                dialog: false,
+                selectedStock: '',
+                startDate: '',
+                endDate: '',
+                startMenu: false,
+                endMenu: false,
+                dataTableVisible: false,
+                errorMessage: '', // 存储错误信息
+                headers: [
+                    { text: '股票代號', value: 'code' },
+                    { text: '公司名稱', value: 'company' },
+                    { text: '開盤價', value: 'open' },
+                    { text: '最高價', value: 'high' },
+                    { text: '最低價', value: 'low' },
+                    { text: '成交價', value: 'final' },
+                    { text: '賣價', value: 'sell' },
+                    { text: '買價', value: 'bid' },
+                    { text: '紀錄', value: 'log' }
+                ],
+                headers_log: [
+                    { text: '日期', value: 'date' },
+                    { text: '開盤價', value: 'open' },
+                    { text: '最高價', value: 'high' },
+                    { text: '最低價', value: 'low' },
+                    { text: '收盤價', value: 'final' },
+                    { text: '漲跌價差', value: 'sell' },
+                    { text: '成交筆數', value: 'bid' }
+                ],
+            }
+        },
+        methods: {
+            // 搜索股票
+            async searchStock() {
+                const symbols1 = this.stockSymbol;
+                const url = `/GoPiao/GetRealtimePrice?symbols1=${symbols1}`;
+                try {
+                    const response = await axios.get(url);
+                    this.dataArray = response.data;
+                } catch (error) {
+                    console.error('Error fetching stock data:', error);
                 }
             },
-            methods: {
-                async searchStock() {
-                    const symbols1 = this.stockSymbol;
-                    const url = `/GoPiao/GetRealtimePrice?symbols1=${symbols1}`;
-                    axios.get(url)
-                        .then(response => {
-                            this.dataArray = response.data;
-                        })
-                        .catch(error => {
-                            console.error('Error fetching stock data:', error);
-                        });
-                },
+            // 打开对话框
+            openDialog(stockCode) {
+                this.selectedStock = stockCode;
+                this.dataTableVisible = false;
+                this.dialog = true;
+            },
+            // 关闭对话框
+            closeDialog() {
+                this.dialog = false;
+            },
+            // 验证日期并查询数据
+            async validateDates() {
+                this.errorMessage = '';
+                if (new Date(this.endDate) <= new Date(this.startDate)) {
+                    this.errorMessage = '查詢迄日必須大於查詢起日';
+                    return;
+                }
 
-                //當月股價API
-                async searchStock1(symbols2, date1, date2) {
-                    //symbols2 股票代碼
-                    //date1 開始日
-                    //date2 結束日
-                    const url = `/GoPiao/GetRealtimePrice1?symbols2=${symbols2}&date1=${date1}&date2=${date2}`;
-                    console.log(url);
-                    axios.get(url)
-                        .then(response => {
-                            this.dataArray = response.data;
-                        })
-                        .catch(error => {
-                            console.error('Error fetching stock data:', error);
-                        });
-                },
+                const symbols1 = this.selectedStock;
+                const url = `/GoPiao/GetMonthPrice?symbols1=${symbols1}&startdate=${this.startDate}&enddate=${this.endDate}`;
 
-                openLOG(stockCode,date1,date2) {
-                    this.selectedStock = stockCode;
-                    this.dialogLOG = true;
-                    this.searchStock1(this.selectedStock, date1, date2);  //呼叫當月股價API
-                },
-                closeLOG() {
-                    this.dialogLOG = false;
+                try {
+                    const response = await axios.get(url);
+                    this.dataArray1 = response.data;
+                    this.dataTableVisible = true;
+                } catch (error) {
+                    console.error('Error fetching stock data:', error);
+                    this.errorMessage = '獲取數據時出錯，請稍後重試。';
+                    this.dataArray1 = [];
+                    this.dataTableVisible = false;
                 }
             }
-        })
-    </script>
-</body>
-</html>
+        }
+    })
+</script>
